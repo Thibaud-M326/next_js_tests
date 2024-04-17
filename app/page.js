@@ -1,95 +1,124 @@
+'use client';
 import Image from "next/image";
-import styles from "./page.module.css";
+import styles from "../style/page.module.css";
+import { useState } from 'react';
 
-export default function Home() {
+
+function Square({ value, onSquareClick }) {
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    <button 
+      className={styles.square} 
+      onClick={onSquareClick}
+    >
+      {value}
+    </button>
   );
+}
+
+function Board({ xIsNext, squares, onPlay }) {
+
+  const winner = calculateWinner(squares);
+  let status = "";
+  if(winner) {
+    status = winner + " a gagné";
+  } else {
+    status = "Prochain tour : " + (xIsNext ? "X" : "O");
+  }
+
+  function handleClick(i) {
+    if(squares[i] || calculateWinner(squares)){
+      return;
+    }
+
+    const nextSquares = squares.slice();
+    if(xIsNext) {
+      nextSquares[i] = "X";
+    } else {
+      nextSquares[i] = "O";
+    }
+    onPlay(nextSquares);
+  }
+
+  return (
+    <>
+      <div className={styles.status}>{status}</div>
+      <div className={styles.boardRow}>
+        <Square value={squares[0]} onSquareClick={ () => handleClick(0) } />
+        <Square value={squares[1]} onSquareClick={ () => handleClick(1) } />
+        <Square value={squares[2]} onSquareClick={ () => handleClick(2) } />
+      </div>
+      <div className={styles.boardRow}>
+        <Square value={squares[3]} onSquareClick={ () => handleClick(3) } />
+        <Square value={squares[4]} onSquareClick={ () => handleClick(4) } />
+        <Square value={squares[5]} onSquareClick={ () => handleClick(5) } />
+      </div>
+      <div className={styles.boardRow}>
+        <Square value={squares[6]} onSquareClick={ () => handleClick(6) } />
+        <Square value={squares[7]} onSquareClick={ () => handleClick(7) } />
+        <Square value={squares[8]} onSquareClick={ () => handleClick(8) } />
+      </div>
+    </>
+  );
+}
+
+export default function Game() {
+  const [history, setHistory] = useState([Array(9).fill(null)]);
+  const [currentMove, setCurrentMove] = useState(0);
+  const xIsNext = currentMove % 2 === 0;
+  const currentSquares = history[currentMove];
+
+  function handlePlay(nextSquares) {
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
+  }
+
+  function jumpTo(nextMove) {
+    setCurrentMove(nextMove);
+  }
+
+  const moves = history.map((squares, move) => {
+    let description;
+    if (move > 0) {
+      description = 'Aller au coup #' + move;
+    } else {
+      description = 'Revenir au début';
+    }
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>{description}</button>
+      </li>
+    );
+  });
+
+  return (
+    <div className={styles.game}>
+      <div className={styles.gameBoard}>
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+      </div>
+      <div className={styles.gameInfo}>
+        <ol>{moves}</ol>
+      </div>
+    </div>
+  );
+}
+
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ]
+
+  for(let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]){
+      return squares[a];
+    }
+  }
 }
